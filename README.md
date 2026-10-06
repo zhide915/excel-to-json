@@ -61,7 +61,7 @@ go test ./...
 go test -short ./...
 ```
 
-Requires **Go 1.22+**.
+Requires **Go 1.26+**.
 
 ---
 
