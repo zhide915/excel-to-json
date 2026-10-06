@@ -61,7 +61,7 @@ go test ./...
 go test -short ./...
 ```
 
-Requires **Go 1.26+**.
+Requires **Go 1.26+**. Tagged releases (`v*`) publish static binaries for linux/darwin/windows on amd64 and arm64.
 
 ---
 

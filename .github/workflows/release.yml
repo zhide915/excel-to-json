@@ -1,0 +1,69 @@
+name: release
+
+# Tag a release to trigger: `git tag v1.0.1 && git push --tags`.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # create the GitHub Release and upload binaries
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go test ./...
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: darwin, goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+          - { goos: windows, goarch: arm64 }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Build and package
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0' # fully static binary, no libc dependency
+        run: |
+          ext=""; [ "$GOOS" = windows ] && ext=.exe
+          go build -trimpath -ldflags="-s -w" -o "excel-to-json${ext}" .
+          name="excel-to-json-${GOOS}-${GOARCH}"
+          if [ "$GOOS" = windows ]; then
+            zip "${name}.zip" "excel-to-json${ext}"
+            echo "ASSET=${name}.zip" >> "$GITHUB_ENV"
+          else
+            tar czf "${name}.tar.gz" "excel-to-json${ext}"
+            echo "ASSET=${name}.tar.gz" >> "$GITHUB_ENV"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*

@@ -57,6 +57,8 @@ go build               # Produces the shipping artifact
 go vet ./... && gofmt -l .   # Keep clean
 ```
 
+CI runs `go vet`, `go test`, and `go build` on every push and PR. Keep the tree `gofmt`-clean.
+
 Integration tests build the real binary once in `TestMain` and exec it, with no test-only code paths. Excel fixtures are generated at test time with excelize; no binary blobs in git.
 
 ## Things to avoid
